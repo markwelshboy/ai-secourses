@@ -96,10 +96,8 @@ COPY requirements.txt /opt/requirements.shared.txt
 # Scripts
 COPY install_secourses_comfyui.sh /opt/install_secourses_comfyui.sh
 COPY install_swarmui.sh          /opt/install_swarmui.sh
-COPY entrypoint.sh               /opt/entrypoint.sh
-COPY healthcheck.sh              /opt/healthcheck.sh
 
-RUN chmod +x /opt/install_secourses_comfyui.sh /opt/install_swarmui.sh /opt/entrypoint.sh /opt/healthcheck.sh
+RUN chmod +x /opt/install_secourses_comfyui.sh /opt/install_swarmui.sh
 
 # ----------------------------
 # Build-time install: ComfyUI
@@ -124,6 +122,11 @@ RUN \
 # (matches SECourses instructions: ffmpeg+cloudflared+SwarmUI+DLNodes+dotnet8)
 # ----------------------------
 RUN /opt/install_swarmui.sh
+
+COPY entrypoint.sh               /opt/entrypoint.sh
+COPY healthcheck.sh              /opt/healthcheck.sh
+
+RUN chmod +x /opt/entrypoint.sh /opt/healthcheck.sh
 
 WORKDIR /workspace/ComfyUI
 
