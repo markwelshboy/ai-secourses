@@ -6,6 +6,7 @@ print_warn() { printf "[comfyui-install] WARN: %s\n" "$*"; }
 print_err()  { printf "[comfyui-install] ERR : %s\n" "$*"; }
 
 # Layout / toggles
+: "${WORKSPACE_HOME:=/workspace}"
 : "${HF_HOME:=/workspace}"
 : "${COMFY_HOME:=/workspace/ComfyUI}"
 : "${COMFY_VENV:=/workspace/ComfyUI/venv}"
@@ -97,7 +98,7 @@ python -m pip install -U pip
 python -m pip install -U uv
 
 # --- torch (locked) ---
-echo "[install] Installing torch ${TORCH_VERSION} from ${TORCH_INDEX_URL}"
+print_info "Installing torch ${TORCH_VERSION} from ${TORCH_INDEX_URL}"
 uv pip install "torch==${TORCH_VERSION}" torchvision torchaudio --index-url "${TORCH_INDEX_URL}"
 
 cd custom_nodes
@@ -146,7 +147,9 @@ uv pip install "${WHEEL_INSIGHTFACE_URL}"
 
 uv pip install deepspeed
 
-# --- shared requirements (your file) ---
+cd ${WORKSPACE_HOME}
+
+# --- shared requirements (SECourses file) ---
 uv pip install -r "${SHARED_REQ}"
 
 # -----------------------------------------------------------------------------
@@ -158,7 +161,7 @@ uv pip install -r "${SHARED_REQ}"
 # (SwarmKSampler.py is inside SwarmComfyCommon)
 # -----------------------------------------------------------------------------
 if bool "${INSTALL_SWARM_EXTRANODES:-true}"; then
-  echo "[install] Installing SwarmUI ExtraNodes (SwarmComfyCommon + SwarmComfyExtra; non-fatal)"
+  print_info "Installing SwarmUI ExtraNodes (SwarmComfyCommon + SwarmComfyExtra; non-fatal)"
 
   cd "${COMFY_HOME}/custom_nodes"
   rm -rf SwarmComfyCommon SwarmComfyExtra SwarmUI_tmp || true
@@ -194,7 +197,7 @@ if bool "${INSTALL_SWARM_EXTRANODES:-true}"; then
 
     if [[ -d "${rel}" ]]; then
       cp -r "${rel}" "../${dest}"
-      echo "[install] Copied ${dest} from ${rel}"
+      print_info "Copied ${dest} from ${rel}"
       return 0
     fi
 
@@ -214,7 +217,7 @@ if bool "${INSTALL_SWARM_EXTRANODES:-true}"; then
   # sanity checks
   if [[ "${ok_common}" == "true" ]]; then
     if [[ -f SwarmComfyCommon/SwarmKSampler.py ]]; then
-      echo "[install] OK: SwarmKSampler.py present under SwarmComfyCommon"
+      print_info "OK: SwarmKSampler.py present under SwarmComfyCommon"
     else
       big_warn "SwarmComfyCommon copied, but SwarmKSampler.py not found inside it (layout changed?)"
     fi
@@ -228,7 +231,7 @@ fi
 # -----------------------------------------------------------------------------
 # Cleanup to reduce layer size (must happen in this same RUN layer)
 # -----------------------------------------------------------------------------
-echo "[cleanup] reducing image size..."
+print_info "Reducing image size..."
 
 if bool "${CLEAN_PIP_CACHE}"; then
   rm -rf /root/.cache/pip /root/.cache/uv || true
@@ -244,4 +247,4 @@ if bool "${STRIP_GIT}"; then
   find /workspace -type d -name ".git" -prune -exec rm -rf {} + 2>/dev/null || true
 fi
 
-echo "[install] Done."
+print_info "Done."
