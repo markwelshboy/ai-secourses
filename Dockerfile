@@ -61,8 +61,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     # SwarmUI runtime toggles (used by entrypoint.sh)
     SWARMUI_ENABLE=false \
     SWARMUI_DOWNLOADER_ENABLE=false \
-    SWARMUI_PORT=7861 \
-    DL_PORT=7862
+    SWARMUI_PORT=7861
 
 # OCI labels
 LABEL org.opencontainers.image.title="SECourses ComfyUI (build-baked /workspace layout)" \
@@ -76,13 +75,22 @@ LABEL org.opencontainers.image.title="SECourses ComfyUI (build-baked /workspace 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-      git ca-certificates curl wget \
-      tmux \
+      ca-certificates curl wget \
+      git git-lfs \
+      tmux jq unzip tmux gawk coreutils \
+      net-tools rsync ncurses-base bash-completion less nano \
+      curl ninja-build aria2 vim \
+      psmisc \
       python3.10-venv python3.10-dev \
       build-essential pkg-config \
       libgl1 libglib2.0-0 \
-      psmisc \
-    && rm -rf /var/lib/apt/lists/*
+      gcc g++ cmake \
+      openssh-server && \
+    mkdir -p /run/sshd && \
+    git lfs install --system && \
+    ln -sf /usr/bin/python3.10 /usr/bin/python && \
+    ln -sf /usr/bin/pip3 /usr/bin/pip && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Ensure uv is present
 RUN python -m pip install -U pip wheel setuptools uv
@@ -135,6 +143,6 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=45s --retries=3 \
   CMD /opt/healthcheck.sh || exit 1
 
 # Expose for documentation (Vast uses its own port mapping)
-EXPOSE 3000 7861 7862
+EXPOSE 3000 7861
 
 ENTRYPOINT ["/opt/entrypoint.sh"]

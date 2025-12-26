@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Layout / toggles
+: "${WORKSPACE_HOME:=/workspace}"
 : "${SWARMUI_HOME:=/workspace/SwarmUI}"
 
 section() {
@@ -11,8 +13,8 @@ section() {
 
 section "Installing SwarmUI (SECourses)"
 
-mkdir -p /workspace
-cd /workspace
+mkdir -p ${WORKSPACE_HOME}
+cd ${WORKSPACE_HOME}
 
 # ---- ffmpeg / ffprobe ----
 # (exact file from instructions; safe if missing)
