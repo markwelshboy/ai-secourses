@@ -152,6 +152,10 @@ cd ${WORKSPACE_HOME}
 # --- shared requirements (SECourses file) ---
 uv pip install -r "${SHARED_REQ}"
 
+# --- SwarmUI/Downloader ---
+
+uv pip install gradio==6.2.0
+
 # -----------------------------------------------------------------------------
 # SwarmUI ExtraNodes -> ComfyUI custom_nodes (best-effort, non-fatal)
 #
