@@ -2,11 +2,8 @@
 FROM runpod/pytorch:2.2.0-py3.10-cuda12.1.1-devel-ubuntu22.04
 
 # ----------------------------
-# Build-time version locks
+# Build-time version locks (these SHOULD affect caching)
 # ----------------------------
-ARG BUILD_DATE="unknown"
-ARG VCS_REF="unknown"
-ARG IMAGE_VERSION="0.1.0"
 
 # Core repos/refs
 ARG COMFY_REPO="https://github.com/comfyanonymous/ComfyUI"
@@ -49,6 +46,10 @@ ENV DEBIAN_FRONTEND=noninteractive \
     HF_HOME=/workspace \
     UV_SKIP_WHEEL_FILENAME_CHECK=1 \
     UV_LINK_MODE=copy \
+    # reduce build-time cache explosion
+    UV_CACHE_DIR=/tmp/uv-cache \
+    PIP_CACHE_DIR=/tmp/pip-cache \
+    PIP_NO_CACHE_DIR=1 \
     COMFY_HOME=/workspace/ComfyUI \
     COMFY_VENV=/workspace/ComfyUI/venv \
     COMFY_LISTEN=0.0.0.0 \
@@ -63,23 +64,15 @@ ENV DEBIAN_FRONTEND=noninteractive \
     SWARMUI_DOWNLOADER_ENABLE=false \
     SWARMUI_PORT=7861
 
-# OCI labels
-LABEL org.opencontainers.image.title="SECourses ComfyUI (build-baked /workspace layout)" \
-      org.opencontainers.image.description="ComfyUI + SwarmUI image based on SECourses RunPod instructions; all components installed at build time into /workspace; Vast-friendly env toggles." \
-      org.opencontainers.image.version="${IMAGE_VERSION}" \
-      org.opencontainers.image.created="${BUILD_DATE}" \
-      org.opencontainers.image.revision="${VCS_REF}" \
-      org.opencontainers.image.source="unknown"
-
 # ---- OS deps (minimal; base already has most) ----
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     apt-get update && \
     apt-get install -y --no-install-recommends \
       ca-certificates curl wget \
       git git-lfs \
-      tmux jq unzip tmux gawk coreutils \
+      tmux jq unzip gawk coreutils \
       net-tools rsync ncurses-base bash-completion less nano \
-      curl ninja-build aria2 vim \
+      ninja-build aria2 vim \
       psmisc \
       python3.10-venv python3.10-dev \
       build-essential pkg-config \
@@ -98,7 +91,7 @@ RUN python -m pip install -U pip wheel setuptools uv
 # Volume-style workspace layout (even without an actual mount)
 RUN mkdir -p /workspace
 
-# Shared requirements (your pasted file)
+# Shared requirements
 COPY requirements.txt /opt/requirements.shared.txt
 
 # Scripts
@@ -127,13 +120,12 @@ RUN \
 
 # ----------------------------
 # Build-time install: SwarmUI
-# (matches SECourses instructions: ffmpeg+cloudflared+SwarmUI+DLNodes+dotnet8)
 # ----------------------------
 RUN /opt/install_swarmui.sh
 
-COPY entrypoint.sh               /opt/entrypoint.sh
-COPY healthcheck.sh              /opt/healthcheck.sh
-
+# Runtime scripts
+COPY entrypoint.sh  /opt/entrypoint.sh
+COPY healthcheck.sh /opt/healthcheck.sh
 RUN chmod +x /opt/entrypoint.sh /opt/healthcheck.sh
 
 WORKDIR /workspace/ComfyUI
@@ -144,5 +136,19 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=45s --retries=3 \
 
 # Expose for documentation (Vast uses its own port mapping)
 EXPOSE 3000 7861
+
+# ----------------------------
+# Image metadata (declare LAST so changing these args doesn't bust build cache)
+# ----------------------------
+ARG BUILD_DATE="unknown"
+ARG VCS_REF="unknown"
+ARG IMAGE_VERSION="0.1.0"
+
+LABEL org.opencontainers.image.title="SECourses ComfyUI (build-baked /workspace layout)" \
+      org.opencontainers.image.description="ComfyUI + SwarmUI image based on SECourses RunPod instructions; all components installed at build time into /workspace; Vast-friendly env toggles." \
+      org.opencontainers.image.version="${IMAGE_VERSION}" \
+      org.opencontainers.image.created="${BUILD_DATE}" \
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.source="unknown"
 
 ENTRYPOINT ["/opt/entrypoint.sh"]
