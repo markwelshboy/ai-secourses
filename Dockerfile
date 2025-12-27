@@ -54,9 +54,9 @@ ENV DEBIAN_FRONTEND=noninteractive \
     COMFY_VENV=/workspace/ComfyUI/venv \
     COMFY_LISTEN=0.0.0.0 \
     COMFY_PORT=3000 \
-    INSTALL_IPADAPTER=true \
-    INSTALL_REACTOR=true \
-    INSTALL_IMPACT=true \
+    INSTALL_IPADAPTER=false \
+    INSTALL_REACTOR=false \
+    INSTALL_IMPACT=false \
     RUNTIME_ENSURE_INSTALL=false \
     ENABLE_SAGE=true \
     # SwarmUI runtime toggles (used by entrypoint.sh)
