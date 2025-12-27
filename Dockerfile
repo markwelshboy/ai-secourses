@@ -93,12 +93,14 @@ RUN mkdir -p /workspace
 
 # Shared requirements
 COPY requirements.txt /opt/requirements.shared.txt
+COPY requirements_trainer.txt /opt/requirements_trainer.txt
 
 # Scripts
 COPY install_secourses_comfyui.sh /opt/install_secourses_comfyui.sh
-COPY install_swarmui.sh          /opt/install_swarmui.sh
+COPY install_swarmui.sh           /opt/install_swarmui.sh
+COPY install_musubi_trainer.sh    /opt/install_musubi_trainer.sh
 
-RUN chmod +x /opt/install_secourses_comfyui.sh /opt/install_swarmui.sh
+RUN chmod +x /opt/install_secourses_comfyui.sh /opt/install_swarmui.sh /opt/install_musubi_trainer.sh
 
 # ----------------------------
 # Build-time install: ComfyUI
@@ -122,6 +124,12 @@ RUN \
 # Build-time install: SwarmUI
 # ----------------------------
 RUN /opt/install_swarmui.sh
+
+# ----------------------------
+# Build-time install: Musubi Trainer
+# ----------------------------
+RUN /opt/install_musubi_trainer.sh
+
 
 # Runtime scripts
 COPY entrypoint.sh  /opt/entrypoint.sh

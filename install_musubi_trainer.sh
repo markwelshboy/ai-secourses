@@ -5,12 +5,12 @@ set -euo pipefail
 : "${HF_HOME:=/workspace}"
 
 : "${MUSUBI_TRAINER_REPO:=https://github.com/FurkanGozukara/SECourses_Musubi_Trainer}"
-: "${MUSUBI_TRAINER_DIR:=${WORKSPACE}/SECourses_Musubi_Trainer}"
+: "${MUSUBI_TRAINER_DIR:=${WORKSPACE}/Musubi_Trainer}"
 : "${MUSUBI_TUNER_REPO:=https://github.com/kohya-ss/musubi-tuner}"
 : "${MUSUBI_TUNER_DIR:=${MUSUBI_TRAINER_DIR}/musubi-tuner}"
 
 : "${MUSUBI_VENV:=${MUSUBI_TRAINER_DIR}/venv}"
-: "${MUSUBI_REQ:=${WORKSPACE}/requirements_trainer.txt}"   # you can COPY this into the image or keep it in pod-runtime
+: "${MUSUBI_REQ:=/opt/requirements.musubi_trainer.txt}"   # you can COPY this into the image or keep it in pod-runtime
 
 mkdir -p "${WORKSPACE}"
 cd "${WORKSPACE}"
@@ -39,7 +39,7 @@ python -m pip install -U uv
 
 # Install requirements into THIS venv
 if [[ ! -f "${MUSUBI_REQ}" ]]; then
-  echo "[musubi] FATAL: requirements_trainer.txt not found at ${MUSUBI_REQ}" >&2
+  echo "[musubi-trainer] FATAL: Requirements file not found at ${MUSUBI_REQ}" >&2
   exit 1
 fi
 
@@ -56,4 +56,4 @@ uv pip install -r "${MUSUBI_REQ}"
 cd "${MUSUBI_TUNER_DIR}"
 uv pip install -e .
 
-echo "[musubi] Install complete."
+echo "[musubi-trainer] Install complete."
