@@ -151,11 +151,11 @@ ARG BUILD_DATE="unknown"
 ARG VCS_REF="unknown"
 ARG IMAGE_VERSION="0.1.0"
 
-LABEL org.opencontainers.image.title="SECourses ComfyUI (build-baked /workspace layout)" \
-      org.opencontainers.image.description="ComfyUI + SwarmUI image based on SECourses RunPod instructions; all components installed at build time into /workspace; Vast-friendly env toggles." \
+LABEL org.opencontainers.image.title="SECourses (build-baked /workspace layout)" \
+      org.opencontainers.image.description="ComfyUI + SwarmUI + Musubi Trainer image based on SECourses RunPod instructions; all components installed at build time into /workspace; Vast-friendly env toggles." \
       org.opencontainers.image.version="${IMAGE_VERSION}" \
       org.opencontainers.image.created="${BUILD_DATE}" \
       org.opencontainers.image.revision="${VCS_REF}" \
-      org.opencontainers.image.source="unknown"
+      org.opencontainers.image.source="SECourses Patreon and GitHub Repository"
 
 ENTRYPOINT ["/opt/entrypoint.sh"]
