@@ -54,14 +54,14 @@ ENV DEBIAN_FRONTEND=noninteractive \
     COMFY_VENV=/workspace/ComfyUI/venv \
     COMFY_LISTEN=0.0.0.0 \
     COMFY_PORT=3000 \
-    INSTALL_IPADAPTER=false \
-    INSTALL_REACTOR=false \
-    INSTALL_IMPACT=false \
+    INSTALL_IPADAPTER=true \
+    INSTALL_REACTOR=true \
+    INSTALL_IMPACT=true \
     RUNTIME_ENSURE_INSTALL=false \
     ENABLE_SAGE=true \
     # SwarmUI runtime toggles (used by entrypoint.sh)
-    SWARMUI_ENABLE=false \
-    SWARMUI_DOWNLOADER_ENABLE=false \
+    SWARMUI_ENABLE=true \
+    SWARMUI_DOWNLOADER_ENABLE=true \
     SWARMUI_PORT=7861
 
 # ---- OS deps (minimal; base already has most) ----
@@ -93,7 +93,7 @@ RUN mkdir -p /workspace
 
 # Shared requirements
 COPY requirements.txt /opt/requirements.shared.txt
-COPY requirements_trainer.txt /opt/requirements_trainer.txt
+COPY requirements_trainer.txt /opt/requirements.musubi_trainer.txt
 
 # Scripts
 COPY install_secourses_comfyui.sh /opt/install_secourses_comfyui.sh
@@ -129,7 +129,6 @@ RUN /opt/install_swarmui.sh
 # Build-time install: Musubi Trainer
 # ----------------------------
 RUN /opt/install_musubi_trainer.sh
-
 
 # Runtime scripts
 COPY entrypoint.sh  /opt/entrypoint.sh
