@@ -10,13 +10,15 @@ set -euo pipefail
 : "${CLEAN_PIP_CACHE:=true}"
 : "${CLEAN_BUILD_TRASH:=true}"
 
+print_info() { printf "[swarmui-install] INFO: %s\n" "$*"; }
+print_warn() { printf "[swarmui-install] WARN: %s\n" "$*"; }
+print_err()  { printf "[swarmui-install] ERR : %s\n" "$*"; }
+
 section() {
   printf "\n================================================================================\n"
   printf "=== %s\n" "${1:-}"
   printf "================================================================================\n"
 }
-
-section "Installing SwarmUI (SECourses)"
 
 mkdir -p ${WORKSPACE_HOME}
 cd ${WORKSPACE_HOME}
@@ -58,11 +60,11 @@ chmod +x dotnet-install.sh
 ./dotnet-install.sh --channel 8.0 --runtime aspnetcore
 ./dotnet-install.sh --channel 8.0
 
-echo "[size] /workspace:"; du -sh /workspace/* 2>/dev/null || true
-echo "[size] /tmp:"; du -sh /tmp 2>/dev/null || true
-echo "[size] /root caches:"; du -sh /root/.cache 2>/dev/null || true
-echo "[size] /root/.nuget:"; du -sh /root/.nuget 2>/dev/null || true
-echo "[size] /usr/share/dotnet:"; du -sh /usr/share/dotnet 2>/dev/null || true
+print_info "[size] /workspace:"; du -sh /workspace/* 2>/dev/null || true
+print_info "[size] /tmp:"; du -sh /tmp 2>/dev/null || true
+print_info "[size] /root caches:"; du -sh /root/.cache 2>/dev/null || true
+print_info "[size] /root/.nuget:"; du -sh /root/.nuget 2>/dev/null || true
+print_info "[size] /usr/share/dotnet:"; du -sh /usr/share/dotnet 2>/dev/null || true
 
 # -----------------------------------------------------------------------------
 # Cleanup to reduce layer size (must happen in this same RUN layer)
@@ -83,4 +85,4 @@ if bool "${STRIP_GIT}"; then
   find /workspace -type d -name ".git" -prune -exec rm -rf {} + 2>/dev/null || true
 fi
 
-section "SwarmUI install complete"
+print_info "SwarmUI install complete"

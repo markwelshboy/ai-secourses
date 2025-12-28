@@ -17,6 +17,10 @@ set -euo pipefail
 : "${MUSUBI_VENV:=${MUSUBI_TRAINER_DIR}/venv}"
 : "${MUSUBI_REQ:=/opt/requirements.musubi_trainer.txt}"   # you can COPY this into the image or keep it in pod-runtime
 
+print_info() { printf "[musubi-install] INFO: %s\n" "$*"; }
+print_warn() { printf "[musubi-install] WARN: %s\n" "$*"; }
+print_err()  { printf "[musubi-install] ERR : %s\n" "$*"; }
+
 mkdir -p "${WORKSPACE}"
 cd "${WORKSPACE}"
 
@@ -44,7 +48,7 @@ python -m pip install -U uv
 
 # Install requirements into THIS venv
 if [[ ! -f "${MUSUBI_REQ}" ]]; then
-  echo "[musubi-trainer] FATAL: Requirements file not found at ${MUSUBI_REQ}" >&2
+  print_err "Requirements file not found at ${MUSUBI_REQ}" >&2
   exit 1
 fi
 
@@ -80,4 +84,4 @@ if bool "${STRIP_GIT}"; then
   find /workspace -type d -name ".git" -prune -exec rm -rf {} + 2>/dev/null || true
 fi
 
-echo "[musubi-trainer] Install complete."
+print_info "[musubi-trainer] Install complete."
