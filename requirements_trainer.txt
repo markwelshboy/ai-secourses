@@ -1,3 +1,4 @@
+# Requirements for Musubi Trainer
 
 --extra-index-url https://download.pytorch.org/whl/cu129
 torch==2.8.0

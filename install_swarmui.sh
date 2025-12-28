@@ -10,9 +10,20 @@ set -euo pipefail
 : "${CLEAN_PIP_CACHE:=true}"
 : "${CLEAN_BUILD_TRASH:=true}"
 
-print_info() { printf "[swarmui-install] INFO: %s\n" "$*"; }
-print_warn() { printf "[swarmui-install] WARN: %s\n" "$*"; }
-print_err()  { printf "[swarmui-install] ERR : %s\n" "$*"; }
+print_info() { printf "[musubi-install] INFO: %s\n" "$*"; }
+print_warn() { printf "[musubi-install] WARN: %s\n" "$*"; }
+print_err()  { printf "[musubi-install] ERR : %s\n" "$*"; }
+
+uv_install() {
+  # uv_install <args...>
+  if "${MUSUBI_UV}" pip --python "${MUSUBI_PY}" install "$@"; then
+    return 0
+  fi
+  print_warn "uv install failed; falling back to pip: $*"
+  "${MUSUBI_PY}" -m pip install "$@"
+}
+
+bool() { case "${1,,}" in 1|true|yes|y|on) return 0 ;; *) return 1 ;; esac; }
 
 section() {
   printf "\n================================================================================\n"

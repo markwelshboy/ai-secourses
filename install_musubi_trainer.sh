@@ -20,9 +20,23 @@ set -euo pipefail
 : "${MUSUBI_VENV:=${MUSUBI_TRAINER_DIR}/venv}"
 : "${MUSUBI_REQ:=/opt/requirements.musubi_trainer.txt}"
 
+MUSUBI_PY="${MUSUBI_VENV}/bin/python"
+MUSUBI_UV="${MUSUBI_VENV}/bin/uv"
+MUSUBI_PIP="${MUSUBI_VENV}/bin/pip"
+
 print_info() { printf "[musubi-install] INFO: %s\n" "$*"; }
 print_warn() { printf "[musubi-install] WARN: %s\n" "$*"; }
 print_err()  { printf "[musubi-install] ERR : %s\n" "$*"; }
+
+uv_install() {
+  # uv_install <pip args...>
+  # Try uv first; if uv can't find the venv, fall tells you why and uses pip.
+  if "${MUSUBI_UV}" pip install "$@"; then
+    return 0
+  fi
+  print_warn "uv install failed; falling back to pip: $*"
+  "${MUSUBI_PY}" -m pip install "$@"
+}
 
 bool() { case "${1,,}" in 1|true|yes|y|on) return 0 ;; *) return 1 ;; esac; }
 
@@ -85,10 +99,6 @@ else
   print_info "Reusing existing venv: ${MUSUBI_VENV}"
 fi
 
-MUSUBI_PY="${MUSUBI_VENV}/bin/python"
-MUSUBI_PIP="${MUSUBI_VENV}/bin/pip"
-MUSUBI_UV="${MUSUBI_VENV}/bin/uv"
-
 # Make absolutely sure we install *into this venv*
 "${MUSUBI_PY}" -m pip install -U pip wheel setuptools
 "${MUSUBI_PIP}" install -U uv
@@ -101,18 +111,23 @@ fi
 # -----------------------------------------------------------------------------
 # UV behavior + cache placement
 # -----------------------------------------------------------------------------
+
+python -m venv "${MUSUBI_VENV}"
+
+# Activate (good for lots of tools) + force env vars for uv detection
+# shellcheck disable=SC1090
+source "${MUSUBI_VENV}/bin/activate"
+export VIRTUAL_ENV="${MUSUBI_VENV}"
+export PATH="${MUSUBI_VENV}/bin:${PATH}"
+
 export UV_SKIP_WHEEL_FILENAME_CHECK=1
 export UV_LINK_MODE=copy
 
-# Keep uv cache on /tmp but we WILL delete it in this same layer
-export UV_CACHE_DIR=/tmp/uv-cache
-mkdir -p "${UV_CACHE_DIR}"
+"${MUSUBI_PY}" -m pip install -U pip wheel setuptools
+"${MUSUBI_PY}" -m pip install -U uv
 
-print_info "Installing requirements into musubi venv (explicit uv binary)..."
-"${MUSUBI_UV}" pip install -r "${MUSUBI_REQ}"
-
-print_info "Installing musubi-tuner editable..."
-"${MUSUBI_UV}" pip install -e "${MUSUBI_TUNER_DIR}"
+uv_install -r "${MUSUBI_REQ}"
+uv_install -e "${MUSUBI_TUNER_DIR}"
 
 print_info "After installs (before cleanup):"
 trace_sizes
