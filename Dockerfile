@@ -97,10 +97,8 @@ COPY requirements_trainer.txt /opt/requirements.musubi_trainer.txt
 
 # Scripts
 COPY install_secourses_comfyui.sh /opt/install_secourses_comfyui.sh
-COPY install_swarmui.sh           /opt/install_swarmui.sh
-COPY install_musubi_trainer.sh    /opt/install_musubi_trainer.sh
 
-RUN chmod +x /opt/install_secourses_comfyui.sh /opt/install_swarmui.sh /opt/install_musubi_trainer.sh
+RUN chmod +x /opt/install_secourses_comfyui.sh
 
 # ----------------------------
 # Build-time install: ComfyUI
@@ -123,16 +121,20 @@ RUN \
 # ----------------------------
 # Build-time install: SwarmUI
 # ----------------------------
+COPY install_swarmui.sh           /opt/install_swarmui.sh
+RUN chmod +x /opt/install_swarmui.sh
 RUN /opt/install_swarmui.sh
 
 # ----------------------------
 # Build-time install: Musubi Trainer
 # ----------------------------
+COPY install_musubi_trainer.sh    /opt/install_musubi_trainer.sh
+RUN chmod +x /opt/install_musubi_trainer.sh
 RUN /opt/install_musubi_trainer.sh
 
 # Runtime scripts
-COPY entrypoint.sh  /opt/entrypoint.sh
-COPY healthcheck.sh /opt/healthcheck.sh
+COPY entrypoint.sh                /opt/entrypoint.sh
+COPY healthcheck.sh               /opt/healthcheck.sh
 RUN chmod +x /opt/entrypoint.sh /opt/healthcheck.sh
 
 WORKDIR /workspace/ComfyUI
