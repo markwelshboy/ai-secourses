@@ -53,4 +53,13 @@ chmod +x dotnet-install.sh
 ./dotnet-install.sh --channel 8.0 --runtime aspnetcore
 ./dotnet-install.sh --channel 8.0
 
+echo "[size] /workspace:"; du -sh /workspace/* 2>/dev/null || true
+echo "[size] /tmp:"; du -sh /tmp 2>/dev/null || true
+echo "[size] /root caches:"; du -sh /root/.cache 2>/dev/null || true
+echo "[size] /root/.nuget:"; du -sh /root/.nuget 2>/dev/null || true
+echo "[size] /usr/share/dotnet:"; du -sh /usr/share/dotnet 2>/dev/null || true
+
+# cleanup (important: same RUN/layer)
+rm -rf /tmp/* /root/.cache/uv /root/.cache/pip /root/.nuget || true
+
 section "SwarmUI install complete"

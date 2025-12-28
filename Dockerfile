@@ -58,10 +58,10 @@ ENV DEBIAN_FRONTEND=noninteractive \
     INSTALL_REACTOR=false \
     INSTALL_IMPACT=false \
     RUNTIME_ENSURE_INSTALL=false \
-    ENABLE_SAGE=true \
+    ENABLE_SAGE=false \
     # SwarmUI runtime toggles (used by entrypoint.sh)
-    SWARMUI_ENABLE=true \
-    SWARMUI_DOWNLOADER_ENABLE=true \
+    SWARMUI_ENABLE=false \
+    SWARMUI_DOWNLOADER_ENABLE=false \
     SWARMUI_PORT=7861
 
 # ---- OS deps (minimal; base already has most) ----
@@ -97,10 +97,8 @@ COPY requirements_trainer.txt     /opt/requirements.musubi_trainer.txt
 
 # Scripts
 COPY install_secourses_comfyui.sh /opt/install_secourses_comfyui.sh
-COPY install_swarmui.sh           /opt/install_swarmui.sh
-COPY install_musubi_trainer.sh    /opt/install_musubi_trainer.sh
 
-RUN chmod +x /opt/install_secourses_comfyui.sh /opt/install_swarmui.sh /opt/install_musubi_trainer.sh
+RUN chmod +x /opt/install_secourses_comfyui.sh
 
 # ----------------------------
 # Build-time install: ComfyUI
@@ -123,11 +121,17 @@ RUN \
 # ----------------------------
 # Build-time install: SwarmUI
 # ----------------------------
+COPY install_swarmui.sh           /opt/install_swarmui.sh
+
+RUN chmod +x /opt/install_swarmui.sh
 RUN /opt/install_swarmui.sh
 
 # ----------------------------
 # Build-time install: Musubi Trainer
 # ----------------------------
+COPY install_musubi_trainer.sh    /opt/install_musubi_trainer.sh
+
+RUN chmod +x /opt/install_musubi_trainer.sh
 RUN /opt/install_musubi_trainer.sh
 
 # Runtime scripts
