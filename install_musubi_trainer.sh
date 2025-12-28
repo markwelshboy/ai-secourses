@@ -5,7 +5,7 @@ set -euo pipefail
 : "${HF_HOME:=/workspace}"
 
 : "${MUSUBI_TRAINER_REPO:=https://github.com/FurkanGozukara/SECourses_Musubi_Trainer}"
-: "${MUSUBI_TRAINER_DIR:=${WORKSPACE}/Musubi_Trainer}"
+: "${MUSUBI_TRAINER_DIR:=${WORKSPACE}/SECourses_Musubi_Trainer}"
 : "${MUSUBI_TUNER_REPO:=https://github.com/kohya-ss/musubi-tuner}"
 : "${MUSUBI_TUNER_DIR:=${MUSUBI_TRAINER_DIR}/musubi-tuner}"
 
