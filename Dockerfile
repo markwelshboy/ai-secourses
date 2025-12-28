@@ -93,7 +93,6 @@ RUN mkdir -p /workspace
 
 # Shared requirements
 COPY requirements.txt /opt/requirements.shared.txt
-COPY requirements_trainer.txt /opt/requirements.musubi_trainer.txt
 
 # Scripts
 COPY install_secourses_comfyui.sh /opt/install_secourses_comfyui.sh
@@ -128,6 +127,7 @@ RUN /opt/install_swarmui.sh
 # ----------------------------
 # Build-time install: Musubi Trainer
 # ----------------------------
+COPY requirements_trainer.txt     /opt/requirements.musubi_trainer.txt
 COPY install_musubi_trainer.sh    /opt/install_musubi_trainer.sh
 RUN chmod +x /opt/install_musubi_trainer.sh
 RUN /opt/install_musubi_trainer.sh
