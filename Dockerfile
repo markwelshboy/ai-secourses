@@ -92,12 +92,15 @@ RUN python -m pip install -U pip wheel setuptools uv
 RUN mkdir -p /workspace
 
 # Shared requirements
-COPY requirements.txt /opt/requirements.shared.txt
+COPY requirements.txt             /opt/requirements.shared.txt
+COPY requirements_trainer.txt     /opt/requirements.musubi_trainer.txt
 
 # Scripts
 COPY install_secourses_comfyui.sh /opt/install_secourses_comfyui.sh
+COPY install_swarmui.sh           /opt/install_swarmui.sh
+COPY install_musubi_trainer.sh    /opt/install_musubi_trainer.sh
 
-RUN chmod +x /opt/install_secourses_comfyui.sh
+RUN chmod +x /opt/install_secourses_comfyui.sh /opt/install_swarmui.sh /opt/install_musubi_trainer.sh
 
 # ----------------------------
 # Build-time install: ComfyUI
@@ -120,16 +123,11 @@ RUN \
 # ----------------------------
 # Build-time install: SwarmUI
 # ----------------------------
-COPY install_swarmui.sh           /opt/install_swarmui.sh
-RUN chmod +x /opt/install_swarmui.sh
 RUN /opt/install_swarmui.sh
 
 # ----------------------------
 # Build-time install: Musubi Trainer
 # ----------------------------
-COPY requirements_trainer.txt     /opt/requirements.musubi_trainer.txt
-COPY install_musubi_trainer.sh    /opt/install_musubi_trainer.sh
-RUN chmod +x /opt/install_musubi_trainer.sh
 RUN /opt/install_musubi_trainer.sh
 
 # Runtime scripts
@@ -144,7 +142,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=45s --retries=3 \
   CMD /opt/healthcheck.sh || exit 1
 
 # Expose for documentation (Vast uses its own port mapping)
-EXPOSE 3000 7861
+EXPOSE 3000 7861 7862 7863
 
 # ----------------------------
 # Image metadata (declare LAST so changing these args doesn't bust build cache)
