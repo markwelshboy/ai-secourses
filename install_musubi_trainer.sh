@@ -1,17 +1,22 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# -----------------------------------------------------------------------------
-# Cleanup knobs (keep defaults ON for smaller images)
-# -----------------------------------------------------------------------------
-: "${STRIP_GIT:=true}"
-: "${CLEAN_PIP_CACHE:=true}"
-: "${CLEAN_BUILD_TRASH:=true}"
-: "${RECREATE_VENV:=false}"    # set true if you want a fresh venv every build
+print_info() { printf "[musubi-install] INFO: %s\n" "$*"; }
+print_warn() { printf "[musubi-install] WARN: %s\n" "$*"; }
+print_err()  { printf "[musubi-install] ERR : %s\n" "$*"; }
 
+# -----------------------------------------------------------------------------
+# Defaults / toggles
+# -----------------------------------------------------------------------------
 : "${WORKSPACE:=/workspace}"
 : "${HF_HOME:=/workspace}"
 
+# Cleanup knobs (default ON)
+: "${STRIP_GIT:=true}"
+: "${CLEAN_PIP_CACHE:=true}"
+: "${CLEAN_BUILD_TRASH:=true}"
+
+# Repos / dirs
 : "${MUSUBI_TRAINER_REPO:=https://github.com/FurkanGozukara/SECourses_Musubi_Trainer}"
 : "${MUSUBI_TRAINER_DIR:=${WORKSPACE}/SECourses_Musubi_Trainer}"
 : "${MUSUBI_TUNER_REPO:=https://github.com/kohya-ss/musubi-tuner}"
@@ -20,131 +25,123 @@ set -euo pipefail
 : "${MUSUBI_VENV:=${MUSUBI_TRAINER_DIR}/venv}"
 : "${MUSUBI_REQ:=/opt/requirements.musubi_trainer.txt}"
 
-MUSUBI_PY="${MUSUBI_VENV}/bin/python"
-MUSUBI_UV="${MUSUBI_VENV}/bin/uv"
-MUSUBI_PIP="${MUSUBI_VENV}/bin/pip"
-
-print_info() { printf "[musubi-install] INFO: %s\n" "$*"; }
-print_warn() { printf "[musubi-install] WARN: %s\n" "$*"; }
-print_err()  { printf "[musubi-install] ERR : %s\n" "$*"; }
-
-uv_install() {
-  # uv_install <pip args...>
-  # Try uv first; if uv can't find the venv, fall tells you why and uses pip.
-  if "${MUSUBI_UV}" pip install "$@"; then
-    return 0
-  fi
-  print_warn "uv install failed; falling back to pip: $*"
-  "${MUSUBI_PY}" -m pip install "$@"
-}
+# Constrain uv cache
+: "${UV_CACHE_DIR:=/tmp/uv-cache}"
 
 bool() { case "${1,,}" in 1|true|yes|y|on) return 0 ;; *) return 1 ;; esac; }
 
-# -----------------------------------------------------------------------------
-# Helpers: tracing sizes to find bloat
-# -----------------------------------------------------------------------------
+guard_venv_python() {
+  local py="$1" expected_prefix="$2"
+  if [[ ! -x "$py" ]]; then
+    print_err "Python not executable: $py"
+    exit 1
+  fi
+  local exe
+  exe="$("$py" - <<'PY'
+import sys
+print(sys.executable)
+PY
+)"
+  print_info "Using python: ${exe}"
+  if [[ "$exe" != "${expected_prefix}/bin/python"* ]]; then
+    print_err "Guardrail tripped: python is not from expected venv (${expected_prefix}). Got: ${exe}"
+    exit 1
+  fi
+}
+
 trace_sizes() {
-  print_info "SIZE TRACE: /tmp /root/.cache /workspace venvs /usr/local site-packages"
-  du -sh \
-    /tmp \
-    /root/.cache \
-    "${WORKSPACE}" \
-    "${WORKSPACE}/ComfyUI/venv" \
-    "${MUSUBI_VENV}" \
-    /usr/local/lib/python3.10/dist-packages \
-    2>/dev/null || true
+  print_info "SIZE TRACE (best-effort): /tmp /root/.cache /workspace /usr/local dist-packages"
+  du -sh /tmp /root/.cache "${WORKSPACE}" /usr/local/lib/python3.10/dist-packages 2>/dev/null || true
+  du -sh "${MUSUBI_VENV}" 2>/dev/null || true
+}
+
+git_clone_at_ref() {
+  local repo="$1" ref="$2" dest="$3"
+  if [[ ! -d "${dest}/.git" ]]; then
+    git clone --depth 1 "${repo}" "${dest}"
+  fi
+  (
+    cd "${dest}"
+    git fetch --depth 1 origin "${ref}" >/dev/null 2>&1 || true
+    git checkout -f "${ref}" >/dev/null 2>&1 || git checkout -f "origin/${ref}" >/dev/null 2>&1 || true
+    git reset --hard >/dev/null 2>&1 || true
+    git clean -fd >/dev/null 2>&1 || true
+  )
 }
 
 # -----------------------------------------------------------------------------
+# Start
+# -----------------------------------------------------------------------------
+print_info "Installing Musubi Trainer/Tuner into ${MUSUBI_TRAINER_DIR}"
 mkdir -p "${WORKSPACE}"
 cd "${WORKSPACE}"
-
-print_info "Before install:"
-trace_sizes
-
-# -----------------------------------------------------------------------------
-# Clone/update trainer
-# -----------------------------------------------------------------------------
-if [[ -d "${MUSUBI_TRAINER_DIR}/.git" ]]; then
-  print_info "Updating trainer repo..."
-  git -C "${MUSUBI_TRAINER_DIR}" pull --rebase --autostash || true
-else
-  print_info "Cloning trainer repo..."
-  git clone --depth 1 "${MUSUBI_TRAINER_REPO}" "${MUSUBI_TRAINER_DIR}"
-fi
-
-# -----------------------------------------------------------------------------
-# Clone/update musubi-tuner
-# -----------------------------------------------------------------------------
-if [[ -d "${MUSUBI_TUNER_DIR}/.git" ]]; then
-  print_info "Updating musubi-tuner repo..."
-  git -C "${MUSUBI_TUNER_DIR}" pull --rebase --autostash || true
-else
-  print_info "Cloning musubi-tuner repo..."
-  git clone --depth 1 "${MUSUBI_TUNER_REPO}" "${MUSUBI_TUNER_DIR}"
-fi
-
-# -----------------------------------------------------------------------------
-# Venv (optionally reuse to avoid churn)
-# -----------------------------------------------------------------------------
-if bool "${RECREATE_VENV}"; then
-  print_warn "RECREATE_VENV=true: removing existing venv (if present)"
-  rm -rf "${MUSUBI_VENV}" || true
-fi
-
-if [[ ! -d "${MUSUBI_VENV}" ]]; then
-  print_info "Creating venv: ${MUSUBI_VENV}"
-  python -m venv "${MUSUBI_VENV}"
-else
-  print_info "Reusing existing venv: ${MUSUBI_VENV}"
-fi
-
-# Make absolutely sure we install *into this venv*
-"${MUSUBI_PY}" -m pip install -U pip wheel setuptools
-"${MUSUBI_PIP}" install -U uv
 
 if [[ ! -f "${MUSUBI_REQ}" ]]; then
   print_err "Requirements file not found at ${MUSUBI_REQ}"
   exit 1
 fi
 
-# -----------------------------------------------------------------------------
-# UV behavior + cache placement
-# -----------------------------------------------------------------------------
+# Clone trainer + tuner
+if [[ -d "${MUSUBI_TRAINER_DIR}/.git" ]]; then
+  git -C "${MUSUBI_TRAINER_DIR}" pull --rebase --autostash || true
+else
+  git clone --depth 1 "${MUSUBI_TRAINER_REPO}" "${MUSUBI_TRAINER_DIR}"
+fi
 
+if [[ -d "${MUSUBI_TUNER_DIR}/.git" ]]; then
+  git -C "${MUSUBI_TUNER_DIR}" pull --rebase --autostash || true
+else
+  git clone --depth 1 "${MUSUBI_TUNER_REPO}" "${MUSUBI_TUNER_DIR}"
+fi
+
+# Create venv (idempotent)
 python -m venv "${MUSUBI_VENV}"
 
-# Activate (good for lots of tools) + force env vars for uv detection
-# shellcheck disable=SC1090
-source "${MUSUBI_VENV}/bin/activate"
-export VIRTUAL_ENV="${MUSUBI_VENV}"
-export PATH="${MUSUBI_VENV}/bin:${PATH}"
+MUSUBI_PY="${MUSUBI_VENV}/bin/python"
+MUSUBI_PIP="${MUSUBI_VENV}/bin/pip"
 
-export UV_SKIP_WHEEL_FILENAME_CHECK=1
-export UV_LINK_MODE=copy
+guard_venv_python "${MUSUBI_PY}" "${MUSUBI_VENV}"
 
+# Install pip tooling + uv into venv
+print_info "Bootstrapping pip/uv inside Musubi venv..."
 "${MUSUBI_PY}" -m pip install -U pip wheel setuptools
 "${MUSUBI_PY}" -m pip install -U uv
 
-uv_install -r "${MUSUBI_REQ}"
-uv_install -e "${MUSUBI_TUNER_DIR}"
+MUSUBI_UV="${MUSUBI_VENV}/bin/uv"
+if [[ ! -x "${MUSUBI_UV}" ]]; then
+  print_err "uv not found in venv at: ${MUSUBI_UV}"
+  exit 1
+fi
+
+# Configure uv (avoid cache explosion)
+export UV_SKIP_WHEEL_FILENAME_CHECK="${UV_SKIP_WHEEL_FILENAME_CHECK:-1}"
+export UV_LINK_MODE="${UV_LINK_MODE:-copy}"
+export UV_CACHE_DIR
+mkdir -p "${UV_CACHE_DIR}"
+
+print_info "Installing requirements into Musubi venv with venv-local uv..."
+"${MUSUBI_UV}" pip install -r "${MUSUBI_REQ}"
+
+print_info "Installing musubi-tuner editable into Musubi venv..."
+"${MUSUBI_UV}" pip install -e "${MUSUBI_TUNER_DIR}"
 
 print_info "After installs (before cleanup):"
 trace_sizes
 
 # -----------------------------------------------------------------------------
-# Cleanup (must happen in this same RUN layer)
+# Cleanup (same RUN layer)
 # -----------------------------------------------------------------------------
 print_info "Reducing image size..."
-
 if bool "${CLEAN_PIP_CACHE}"; then
-  rm -rf /root/.cache/pip /root/.cache/uv || true
-  rm -rf /tmp/uv-cache /tmp/pip-cache || true
+  rm -rf /root/.cache/pip 2>/dev/null || true
+  # If /root/.cache/uv is a buildkit cache mount, rm may fail with "busy" — ignore.
+  rm -rf /root/.cache/uv 2>/dev/null || true
+  rm -rf /tmp/uv-cache /tmp/pip-cache 2>/dev/null || true
 fi
 
 if bool "${CLEAN_BUILD_TRASH}"; then
   find "${WORKSPACE}" -type d -name "__pycache__" -prune -exec rm -rf {} + 2>/dev/null || true
-  rm -rf /tmp/* /var/tmp/* || true
+  rm -rf /tmp/* /var/tmp/* 2>/dev/null || true
 fi
 
 if bool "${STRIP_GIT}"; then
@@ -154,4 +151,4 @@ fi
 print_info "After cleanup:"
 trace_sizes
 
-print_info "Install complete."
+print_info "Musubi Trainer/Tuner install complete."
