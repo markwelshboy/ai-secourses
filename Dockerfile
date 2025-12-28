@@ -103,7 +103,7 @@ RUN chmod +x /opt/install_secourses_comfyui.sh
 # ----------------------------
 # Build-time install: ComfyUI
 # ----------------------------
-RUN \
+RUN --mount=type=cache,target=/root/.cache/uv \
   COMFY_REPO="${COMFY_REPO}" COMFY_REF="${COMFY_REF}" \
   NODE_MANAGER_REPO="${NODE_MANAGER_REPO}" NODE_MANAGER_REF="${NODE_MANAGER_REF}" \
   NODE_GGUF_REPO="${NODE_GGUF_REPO}" NODE_GGUF_REF="${NODE_GGUF_REF}" \
@@ -124,7 +124,8 @@ RUN \
 COPY install_swarmui.sh           /opt/install_swarmui.sh
 
 RUN chmod +x /opt/install_swarmui.sh
-RUN /opt/install_swarmui.sh
+RUN --mount=type=cache,target=/root/.cache/uv \
+    /opt/install_swarmui.sh
 
 # ----------------------------
 # Build-time install: Musubi Trainer
@@ -132,7 +133,8 @@ RUN /opt/install_swarmui.sh
 COPY install_musubi_trainer.sh    /opt/install_musubi_trainer.sh
 
 RUN chmod +x /opt/install_musubi_trainer.sh
-RUN /opt/install_musubi_trainer.sh
+RUN --mount=type=cache,target=/root/.cache/uv \
+    /opt/install_musubi_trainer.sh
 
 # Runtime scripts
 COPY entrypoint.sh                /opt/entrypoint.sh

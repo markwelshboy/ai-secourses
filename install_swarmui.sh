@@ -5,6 +5,11 @@ set -euo pipefail
 : "${WORKSPACE_HOME:=/workspace}"
 : "${SWARMUI_HOME:=/workspace/SwarmUI}"
 
+# Cleanup knobs (keep defaults ON for smaller images)
+: "${STRIP_GIT:=true}"
+: "${CLEAN_PIP_CACHE:=true}"
+: "${CLEAN_BUILD_TRASH:=true}"
+
 section() {
   printf "\n================================================================================\n"
   printf "=== %s\n" "${1:-}"
@@ -59,7 +64,23 @@ echo "[size] /root caches:"; du -sh /root/.cache 2>/dev/null || true
 echo "[size] /root/.nuget:"; du -sh /root/.nuget 2>/dev/null || true
 echo "[size] /usr/share/dotnet:"; du -sh /usr/share/dotnet 2>/dev/null || true
 
-# cleanup (important: same RUN/layer)
-rm -rf /tmp/* /root/.cache/uv /root/.cache/pip /root/.nuget || true
+# -----------------------------------------------------------------------------
+# Cleanup to reduce layer size (must happen in this same RUN layer)
+# -----------------------------------------------------------------------------
+print_info "Reducing image size..."
+
+if bool "${CLEAN_PIP_CACHE}"; then
+  rm -rf /root/.cache/pip /root/.cache/uv || true
+  rm -rf /tmp/uv-cache /tmp/pip-cache || true
+fi
+
+if bool "${CLEAN_BUILD_TRASH}"; then
+  find /workspace -type d -name "__pycache__" -prune -exec rm -rf {} + 2>/dev/null || true
+  rm -rf /tmp/* /var/tmp/* || true
+fi
+
+if bool "${STRIP_GIT}"; then
+  find /workspace -type d -name ".git" -prune -exec rm -rf {} + 2>/dev/null || true
+fi
 
 section "SwarmUI install complete"

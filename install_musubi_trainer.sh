@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Cleanup knobs (keep defaults ON for smaller images)
+: "${STRIP_GIT:=true}"
+: "${CLEAN_PIP_CACHE:=true}"
+: "${CLEAN_BUILD_TRASH:=true}"
+
 : "${WORKSPACE:=/workspace}"
 : "${HF_HOME:=/workspace}"
 
@@ -55,5 +60,24 @@ uv pip install -r "${MUSUBI_REQ}"
 # Install musubi-tuner editable
 cd "${MUSUBI_TUNER_DIR}"
 uv pip install -e .
+
+# -----------------------------------------------------------------------------
+# Cleanup to reduce layer size (must happen in this same RUN layer)
+# -----------------------------------------------------------------------------
+print_info "Reducing image size..."
+
+if bool "${CLEAN_PIP_CACHE}"; then
+  rm -rf /root/.cache/pip /root/.cache/uv || true
+  rm -rf /tmp/uv-cache /tmp/pip-cache || true
+fi
+
+if bool "${CLEAN_BUILD_TRASH}"; then
+  find /workspace -type d -name "__pycache__" -prune -exec rm -rf {} + 2>/dev/null || true
+  rm -rf /tmp/* /var/tmp/* || true
+fi
+
+if bool "${STRIP_GIT}"; then
+  find /workspace -type d -name ".git" -prune -exec rm -rf {} + 2>/dev/null || true
+fi
 
 echo "[musubi-trainer] Install complete."

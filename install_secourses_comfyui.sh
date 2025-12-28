@@ -14,6 +14,7 @@ print_err()  { printf "[comfyui-install] ERR : %s\n" "$*"; }
 : "${INSTALL_IPADAPTER:=false}"
 : "${INSTALL_REACTOR:=false}"
 : "${INSTALL_IMPACT:=false}"
+
 : "${INSTALL_SWARM_EXTRANODES:=true}"
 
 # Cleanup knobs (keep defaults ON for smaller images)
