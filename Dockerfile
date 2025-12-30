@@ -95,13 +95,9 @@ ARG WHEEL_XFORMERS_URL="https://huggingface.co/MonsterMMORPG/Wan_GGUF/resolve/ma
 ARG WHEEL_SAGEATTN_URL="https://huggingface.co/MonsterMMORPG/Wan_GGUF/resolve/main/sageattention-2.2.0.post4-cp39-abi3-linux_x86_64.whl"
 ARG WHEEL_INSIGHTFACE_URL="https://huggingface.co/MonsterMMORPG/Wan_GGUF/resolve/main/insightface-0.7.3-cp310-cp310-linux_x86_64.whl"
 
-# Shared requirement files
-COPY requirements.txt         /opt/requirements.shared.txt
-
 # Installer scripts only needed for comfy image
-COPY install_secourses_comfyui.sh /opt/install_secourses_comfyui.sh
-COPY install_swarmui.sh           /opt/install_swarmui.sh
-RUN chmod +x /opt/install_secourses_comfyui.sh /opt/install_swarmui.sh
+COPY install_secourses_comfyui_base.sh /opt/install_secourses_comfyui_base.sh
+RUN chmod +x /opt/install_secourses_comfyui_base.sh
 
 # Build-time install: ComfyUI
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -117,7 +113,18 @@ RUN --mount=type=cache,target=/root/.cache/uv \
   WHEEL_XFORMERS_URL="${WHEEL_XFORMERS_URL}" \
   WHEEL_SAGEATTN_URL="${WHEEL_SAGEATTN_URL}" \
   WHEEL_INSIGHTFACE_URL="${WHEEL_INSIGHTFACE_URL}" \
-  /opt/install_secourses_comfyui.sh
+  /opt/install_secourses_comfyui_base.sh
+
+# Extras (cheap) — copy req right before using
+COPY requirements.txt /opt/requirements.shared.txt
+COPY install_secourses_comfyui_extras.sh /opt/install_secourses_comfyui_extras.sh
+RUN chmod +x /opt/install_secourses_comfyui_extras.sh
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+  /opt/install_secourses_comfyui_extras.sh
+
+COPY install_swarmui.sh           /opt/install_swarmui.sh
+RUN chmod +x /opt/install_swarmui.sh
 
 # Build-time install: SwarmUI
 RUN --mount=type=cache,target=/root/.cache/uv \

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-print_info() { printf "[comfyui-install] INFO: %s\n" "$*"; }
-print_warn() { printf "[comfyui-install] WARN: %s\n" "$*"; }
-print_err()  { printf "[comfyui-install] ERR : %s\n" "$*"; }
+print_info() { printf "[comfyui-base] INFO: %s\n" "$*"; }
+print_warn() { printf "[comfyui-base] WARN: %s\n" "$*"; }
+print_err()  { printf "[comfyui-base] ERR : %s\n" "$*"; }
 
 : "${WORKSPACE:=/workspace}"
 : "${HF_HOME:=/workspace}"
@@ -18,8 +18,6 @@ print_err()  { printf "[comfyui-install] ERR : %s\n" "$*"; }
 : "${STRIP_GIT:=true}"
 : "${CLEAN_PIP_CACHE:=true}"
 : "${CLEAN_BUILD_TRASH:=true}"
-
-: "${SHARED_REQ:=/opt/requirements.shared.txt}"
 
 : "${COMFY_REPO:=https://github.com/comfyanonymous/ComfyUI}"
 : "${COMFY_REF:=master}"
@@ -79,8 +77,7 @@ trace_sizes() {
   du -sh "${COMFY_VENV}" 2>/dev/null || true
 }
 
-# --- Start ---
-print_info "Installing ComfyUI into /workspace (baked into image)."
+print_info "Installing ComfyUI BASE into ${COMFY_HOME}"
 mkdir -p "${WORKSPACE}"
 cd "${WORKSPACE}"
 
@@ -96,19 +93,15 @@ export PATH="${COMFY_VENV}/bin:${PATH}"
 COMFY_PY="${COMFY_VENV}/bin/python"
 COMFY_PIP="${COMFY_VENV}/bin/pip"
 
-# Ensure pip tooling + uv INSIDE venv
 print_info "Bootstrapping pip/uv inside Comfy venv..."
 "${COMFY_PY}" -m pip install -U pip wheel setuptools
 "${COMFY_PY}" -m pip install -U uv
 
 COMFY_UV="${COMFY_VENV}/bin/uv"
-if [[ ! -x "${COMFY_UV}" ]]; then
-  print_err "uv not found in venv at: ${COMFY_UV}"
-  exit 1
-fi
+[[ -x "${COMFY_UV}" ]] || { print_err "uv not found in venv at: ${COMFY_UV}"; exit 1; }
 
-# uv config
-: "${UV_CACHE_DIR:=/tmp/uv-cache}"
+# uv config (cache is mounted by Dockerfile; keep it predictable)
+: "${UV_CACHE_DIR:=/root/.cache/uv}"
 export UV_CACHE_DIR
 mkdir -p "${UV_CACHE_DIR}"
 export UV_SKIP_WHEEL_FILENAME_CHECK="${UV_SKIP_WHEEL_FILENAME_CHECK:-1}"
@@ -157,13 +150,7 @@ print_info "Installing wheel overrides into venv..."
 "${COMFY_UV}" pip install "${WHEEL_XFORMERS_URL}"
 "${COMFY_UV}" pip install "${WHEEL_SAGEATTN_URL}"
 "${COMFY_UV}" pip install "${WHEEL_INSIGHTFACE_URL}"
-
-if [[ -f "${SHARED_REQ}" ]]; then
-  print_info "Installing shared requirements into venv: ${SHARED_REQ}"
-  "${COMFY_UV}" pip install -r "${SHARED_REQ}"
-else
-  big_warn "Shared requirements file not found at ${SHARED_REQ} (skipping)."
-fi
+"${COMFY_UV}" pip install deepspeed
 
 # SwarmUI ExtraNodes best-effort
 if bool "${INSTALL_SWARM_EXTRANODES}"; then
@@ -177,6 +164,7 @@ if bool "${INSTALL_SWARM_EXTRANODES}"; then
   git checkout -f "${SWARMUI_REF}" >/dev/null 2>&1 || git checkout -f "origin/${SWARMUI_REF}" >/dev/null 2>&1 || true
 
   EX_BASE="src/BuiltinExtensions/ComfyUIBackend/ExtraNodes"
+
   find_dir_under_base() {
     local base="$1" name="$2"
     git ls-tree -r -d --name-only HEAD "${base}" 2>/dev/null \
@@ -223,7 +211,7 @@ trace_sizes
 print_info "Reducing image size..."
 if bool "${CLEAN_PIP_CACHE}"; then
   rm -rf /root/.cache/pip 2>/dev/null || true
-  rm -rf /root/.cache/uv 2>/dev/null || true
+  # NOTE: don't rm /root/.cache/uv if it's a BuildKit mount; it may be "busy"
   rm -rf /tmp/uv-cache /tmp/pip-cache 2>/dev/null || true
 fi
 if bool "${CLEAN_BUILD_TRASH}"; then
@@ -237,4 +225,4 @@ fi
 print_info "After cleanup:"
 trace_sizes
 
-print_info "ComfyUI install complete."
+print_info "ComfyUI BASE install complete."
