@@ -13,8 +13,7 @@ diffusers
 onnxruntime-gpu==1.22.0
 piexif
 requests
-deepspeed
 ultralytics==8.3.197
 comfyui-embedded-docs
 comfyui-workflow-templates
-
+imageio_ffmpeg
