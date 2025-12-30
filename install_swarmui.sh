@@ -109,7 +109,10 @@ if bool "${CLEAN_BUILD_TRASH}"; then
 fi
 
 if bool "${STRIP_GIT}"; then
-  find "${WORKSPACE}" -type d -name ".git" -prune -exec rm -rf {} + 2>/dev/null || true
+  # Strip git metadata everywhere EXCEPT SwarmUI itself
+  find "${WORKSPACE}" -type d -name ".git" -prune \
+    ! -path "${SWARMUI_HOME}/.git" \
+    -exec rm -rf {} + 2>/dev/null || true
 fi
 
 print_info "After cleanup:"

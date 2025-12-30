@@ -29,7 +29,10 @@ ENV DEBIAN_FRONTEND=noninteractive \
     ENABLE_SAGE=false \
     SWARMUI_ENABLE=false \
     SWARMUI_DOWNLOADER_ENABLE=false \
-    SWARMUI_PORT=7861
+    SWARMUI_PORT=7861 \
+    SWARMUI_DL_PORT=7862 \
+    DOTNET_ROOT=/opt/dotnet \
+    PATH=/opt/dotnet:/opt/dotnet/tools:$PATH
 
 # ---- OS deps ----
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
