@@ -17,3 +17,4 @@ ultralytics==8.3.197
 comfyui-embedded-docs
 comfyui-workflow-templates
 imageio_ffmpeg
+gradio==6.2.0
