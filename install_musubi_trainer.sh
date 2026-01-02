@@ -8,7 +8,7 @@ print_err()  { printf "[musubi-install] ERR : %s\n" "$*"; }
 : "${WORKSPACE:=/workspace}"
 : "${HF_HOME:=/workspace}"
 
-: "${STRIP_GIT:=true}"
+: "${STRIP_GIT:=false}"
 : "${CLEAN_PIP_CACHE:=true}"
 : "${CLEAN_BUILD_TRASH:=true}"
 : "${FAIL_IF_GLOBAL_SITEPACKAGES_GROWS:=true}"

@@ -29,7 +29,7 @@ print_err()  { printf "[swarmui-install] ERR : %s\n" "$*"; }
 : "${DOTNET_CHANNEL:=8.0}"
 
 # Cleanup knobs
-: "${STRIP_GIT:=true}"
+: "${STRIP_GIT:=false}"
 : "${CLEAN_BUILD_TRASH:=true}"
 
 bool() { case "${1,,}" in 1|true|yes|y|on) return 0 ;; *) return 1 ;; esac; }
